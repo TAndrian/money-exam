@@ -1,0 +1,71 @@
+version: '3'
+
+services:
+
+  app:
+    container_name: money-exam
+    depends_on:
+      - mysqldb
+    build: .
+    restart: unless-stopped
+    ports:
+      - 3001:3000
+    environment:
+      - DB_HOST=mysqldb
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=MONEY_EXAM
+      - DB_PORT=3306
+    stdin_open: true
+    tty: true
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - 82:80
+    links:
+      - 'app'
+      - 'mysqldb'
+    volumes:
+      - './app-files:/var/www/html'
+      - './nginx-conf:/etc/nginx/conf.d'
+
+  mysqldb:
+    container_name: money-exam-db
+    image: mariadb
+    ports:
+      - 3309:3306
+    environment:
+      MYSQL_DATABASE: 'MONEY_EXAM'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: 'root'
+      MYSQL_ROOT_PASSWORD: 'root'
+    volumes:
+      - mysqldata:/var/lib/mysql
+    # phpMyAdmin Service
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    ports:
+      - 8080:80
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - mysqldb
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    ports:
+      - 9443:9443
+# Volumes
+volumes:
+
+  mysqldata:
