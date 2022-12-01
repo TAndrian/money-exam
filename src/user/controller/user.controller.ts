@@ -89,6 +89,7 @@ export class UserController {
     @Session() session: Record<string, any>,
   ) {
     const { email, password } = req.body;
+    if (!email || !password) throw 'Invalid credential';
     try {
       const user = await this.userService.login(email, password);
       if (!session.user) {
@@ -100,6 +101,7 @@ export class UserController {
       }
       res.sendStatus(200);
     } catch (error) {
+      res.status(400).json({ info: 'Bad credential' });
       console.log(
         '🚀 ~ file: user.controller.ts:89 ~ UserController ~ login ~ error',
         error,

@@ -39,7 +39,9 @@ export class UserService {
 
   async login(email: string, password: string): Promise<User> {
     try {
-      const targetUser = await this.UserModel.findOne({ email });
+      const targetUser = await this.UserModel.findOne({ email }).select(
+        'password',
+      );
       const isMatched = this.cryptService.matchPassword(
         password,
         targetUser.password,
