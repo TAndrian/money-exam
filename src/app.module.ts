@@ -12,6 +12,9 @@ import { User, UserSchema } from './user/helpers/user.schema';
 import { UserController } from './user/controller/user.controller';
 import { UserService } from './user/user/user.service';
 import { UserMiddleware } from './middleware/user/user.middleware';
+import { CheckIfUserExistsMiddleware } from './middleware/user/check-if-user-exists/check-if-user-exists.middleware';
+import { CryptService } from './services/crypt/crypt.service';
+import { IsLoggedMiddleware } from './middleware/user/is-logged/is-logged.middleware';
 
 @Module({
   imports: [
@@ -24,12 +27,19 @@ import { UserMiddleware } from './middleware/user/user.middleware';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, CryptService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(UserMiddleware)
+      .apply(UserMiddleware, IsLoggedMiddleware)
       .forRoutes({ path: '/user/create', method: RequestMethod.POST });
+    consumer
+      .apply(CheckIfUserExistsMiddleware, IsLoggedMiddleware)
+      .forRoutes(
+        { path: '/user/getById/:id', method: RequestMethod.GET },
+        { path: '/user/update/:id', method: RequestMethod.PATCH },
+        { path: '/user/delete/:id', method: RequestMethod.DELETE },
+      );
   }
 }
