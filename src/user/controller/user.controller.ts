@@ -7,22 +7,28 @@ import {
   Post,
   Req,
   Res,
+  Session,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { CryptService } from 'src/services/crypt/crypt.service';
 import { CreateUserDto } from '../helpers/user.dto';
 import { UserService } from '../user/user.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private cryptService: CryptService,
+  ) {}
 
   @Post('/create')
   @UsePipes(ValidationPipe)
   createUser(@Body() userDto: CreateUserDto, @Res() res: Response) {
+    const password = this.cryptService.hash(userDto.password);
     try {
-      this.userService.create(userDto);
+      this.userService.create(userDto, password);
       return res.sendStatus(201);
     } catch (error) {
       console.log(
@@ -47,44 +53,57 @@ export class UserController {
     const userId = req.params.id;
     try {
       const user = await this.userService.getId(userId);
-      if (!user) {
-        res.status(404).json({ error: 'User not found' });
-      } else {
-        res.json({ data: user });
-      }
+      res.json({ data: user });
     } catch (error) {
       res.json({ error: 'User id undefined' });
     }
   }
 
   @Patch('update/:id')
-  async update(@Req() req: Request, @Res() res: Response) {
+  update(@Req() req: Request, @Res() res: Response) {
     const userId = req.params.id;
     const body = req.body;
     try {
-      const user = await this.userService.update(userId, body);
-      if (!user) {
-        res.status(404).json({ error: 'User not found' });
-      } else {
-        res.status(200).json({ info: 'User updated' });
-      }
+      this.userService.update(userId, body);
+      res.status(200).json({ info: 'User updated' });
     } catch (error) {
       res.status(400).json({ info: 'User id undefined' });
     }
   }
 
   @Delete('delete/:id')
-  async delete(@Req() req: Request, @Res() res: Response) {
+  delete(@Req() req: Request, @Res() res: Response) {
     const userId = req.params.id;
     try {
-      const user = await this.userService.delete(userId);
-      if (!user) {
-        res.status(404).json({ error: 'User not found' });
-      } else {
-        res.status(200).json({ info: 'User deleted' });
-      }
+      this.userService.delete(userId);
+      res.status(200).json({ info: 'User deleted' });
     } catch (error) {
       res.status(400).json({ info: 'User id undefined' });
+    }
+  }
+
+  @Post('login')
+  async login(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Session() session: Record<string, any>,
+  ) {
+    const { email, password } = req.body;
+    try {
+      const user = await this.userService.login(email, password);
+      if (!session.user) {
+        session.user = {
+          user: user,
+        };
+      } else {
+        session.user = user;
+      }
+      res.sendStatus(200);
+    } catch (error) {
+      console.log(
+        '🚀 ~ file: user.controller.ts:89 ~ UserController ~ login ~ error',
+        error,
+      );
     }
   }
 }
