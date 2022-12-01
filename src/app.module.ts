@@ -32,7 +32,7 @@ import { IsLoggedMiddleware } from './middleware/user/is-logged/is-logged.middle
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(UserMiddleware, IsLoggedMiddleware)
+      .apply(UserMiddleware)
       .forRoutes({ path: '/user/create', method: RequestMethod.POST });
     consumer
       .apply(CheckIfUserExistsMiddleware, IsLoggedMiddleware)
